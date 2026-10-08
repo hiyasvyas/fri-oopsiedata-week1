@@ -46,3 +46,15 @@ Not included here, on purpose: the videos, the episode files, and the full index
 ## What week 2 is
 
 Watch about 30 attempts, pick two tasks that differ, and check that a success and a failure of the same instruction share the scene until the mistake. The proposal's examples are placement and pouring. This release has cup tasks, including `Harvard_EML/stack-and-pack-cups` (200 episodes) and `Harvard_EML/pack-cup` (99). Path names contain the word "pour" 18 times and "bin" 2 times, so those exact examples may be rare and the two tasks should be chosen after watching.
+
+## Setup
+
+```
+python -m venv .venv
+.venv\Scripts\Activate.ps1      # macOS/Linux: source .venv/bin/activate
+pip install -U huggingface_hub datasets
+hf auth login                   # paste YOUR OWN Hugging Face token
+python download_data.py
+```
+
+Data downloads into `data/` (gitignored).

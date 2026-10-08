@@ -7,3 +7,7 @@ episodes.csv
 episodes.parquet
 manifest.csv
 .cache/
+.venv/
+.env
+data/
+__pycache__/
