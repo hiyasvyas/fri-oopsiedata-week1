@@ -1,60 +1,69 @@
-# Week 1 progress: spotting the moment a robot fails on OopsieData
+﻿# Spotting the moment a robot fails on OopsieData
 
 Annie Li, Phoebe Wang, and Hiya Vyas. FRI II Robot Learning, The University of Texas at Austin.
 
-This repo is the week 1 record for the project in `proposal/project_proposal.tex`. Week 1 in that proposal is: get the OopsieData episodes, check whether each episode is already marked success or failure, and get R3M and Robometer to run once. No head was trained. The Hugging Face dataset was not edited and nothing was uploaded back to it.
+This repo follows `proposal/project_proposal.tex`. The goal is to name the picture where a recorded robot attempt starts to fail. A frozen R3M encoder turns each picture into 2,048 numbers. Four small heads will later share one alarm. No head has been trained. The Hugging Face dataset was not edited, and nothing was uploaded back to it.
 
-## What week 1 finished
+## What is done
 
-Claas Voelcker shared OopsieData v0.1, a private Hugging Face dataset of about 53 GB. We downloaded the index and three small episode files onto this computer. The index, `episodes.csv`, lists 10,677 episodes. That spreadsheet does not say success or failure.
+Claas Voelcker shared OopsieData v0.1, a private Hugging Face dataset of about 53 GB and 10,677 episodes. This laptop does not have room for the full release, so we downloaded the index first, then two whole tasks.
 
-The mark is inside each episode file. We opened two files and did not change them:
+The success mark is not in `episodes.csv`. It is inside each episode file at `episode_annotations/<operator name>/success`. `1.0` means the attempt worked. `0.0` means it failed. The labs wrote those marks. We only read them. The file does not say which picture the failure started on.
 
-- `labs/Araya/flower_open_oven/20260803_211207.h5`. The operator group is `LN`. `success` is 1.0. The taxonomy says the outcome is success. The instruction is "Open the oven".
-- `labs/Berkeley_RAIL/20260614_125000/20260614_125502.h5`. The operator group is `jagdeep`. `success` is 1.0. The instruction is "Move the left stuffed toy to the largest bowl."
+Two tasks are on the laptop, about 370 MB together:
 
-The field is `episode_annotations/<operator name>/success`. The operator name changes from file to file. Neither file has the frame where a failure starts. Videos are separate `.mp4` files named inside the episode file.
+| Task | Episodes | Successes | Failures | What we use |
+| --- | --- | --- | --- | --- |
+| Araya, "Open the oven" | 200 | 52, operator `LN` | 148, operator `LN` | The table-view video, `image` |
+| Harvard EML, "Stack and pack the cups." | 200 | 74, operator `HXS` | 126, operator `imported_source_label` | The base-view video, `base_image` |
 
-R3M, the frozen picture network from the proposal, ran on the first frame of one of those videos. The frame is 224 by 224. The description is 2,048 numbers. That vector is `week1/r3m_one_frame.pt`. R3M was not trained.
+The oven folder has 600 videos because each attempt was saved from three cameras. One attempt is one `.h5` file plus its main-camera `.mp4`. The 200 cup attempts and the 200 oven attempts are separate tries, not pieces of one recording.
 
-Robometer's public code was cloned from https://github.com/robometer/robometer. The inference script is `scripts/example_inference_local.py`. The published model is Robometer-4B. It did not run here, because this laptop has no NVIDIA GPU. The proposal runs that model on TACC. The weights were not downloaded, and nothing was trained. The clone is not in this repo, because it is someone else's code and we did not change it.
+R3M is installed from https://github.com/facebookresearch/r3m. The weights are `resnet50`, about 392 MB, stored locally in `.r3m` and not in this repo. R3M was not trained.
+
+Two R3M runs are in this repo:
+
+- `week1/r3m_one_frame.pt` is the first run. One picture from a 13-frame oven clip. That clip is too short to be an experiment task. The file holds one vector of 2,048 numbers.
+- `week1/r3m_two_tasks.pt` is the second run, on the two real tasks. Four attempts only: one oven success, one oven failure, one cup success, one cup failure. The script counted the pictures in each video, kept 16 pictures spread from the first to the last, and saved one vector per picture. Each of the four blocks has shape 16 ├ù 2048. The other 396 attempts have not been through R3M.
+
+The script that made the second file is `week1/run_r3m_two_tasks.py`. To look at the saved numbers:
+
+```powershell
+py -3.12 -c "import torch; x=torch.load(r'week1/r3m_two_tasks.pt', weights_only=False); print(list(x)); v=x['open_oven_failure']['embedding'][0]; print(v.shape); print(round(float(v.norm()), 2))"
+```
+
+Robometer's code was cloned from https://github.com/robometer/robometer. It did not run. This laptop has no NVIDIA GPU, and the Robometer-4B weights were not downloaded. The clone is not in this repo.
 
 ## Files in this repo
 
 | File | What it is |
 | --- | --- |
-| `proposal/project_proposal.tex` | The FRI proposal this week follows |
-| `week1/week1_label_note.txt` | What the two episode files contain |
-| `week1/task_counts.txt` | How many episodes sit in each task folder with at least 20 episodes |
-| `week1/r3m_result.txt` | The one R3M run, in words |
-| `week1/r3m_one_frame.pt` | The 2,048-number description from that frame |
-| `week1/week1_robometer_note.txt` | Why Robometer did not run on this laptop |
+| `proposal/project_proposal.tex` | The FRI proposal |
+| `week1/week1_label_note.txt` | The first two episode files we opened |
+| `week1/task_counts.txt` | Episode counts by folder. "fail 479" there is a path-name count, not a count of failed attempts |
+| `week1/r3m_result.txt` | The one-frame R3M run, in words |
+| `week1/r3m_one_frame.pt` | One 2,048-number vector from the short clip |
+| `week1/run_r3m_two_tasks.py` | How the four real attempts were read and embedded |
+| `week1/r3m_two_tasks.pt` | Four attempts, 16 vectors each |
+| `week1/week1_robometer_note.txt` | Why Robometer did not run here |
+| `download_data.py` | Downloads the WebVisualizer dataset into `data/` after `hf auth login`. That folder is gitignored |
 
-`task_counts.txt` ends with word counts inside file paths. "fail 479" means the letters f-a-i-l appear in 479 paths. It is not a count of failed attempts. The real success mark is inside the episode files.
+Videos, episode files, `episodes.csv`, and the full manifest stay on the local copy at `C:\Users\sunee\oopsiedata-v0.1`. They are listed in `.gitignore`.
 
-## What was looked at, and what was not changed
-
-Looked at, locally:
-
-- `C:\Users\sunee\oopsiedata-v0.1\episodes.csv`
-- `C:\Users\sunee\oopsiedata-v0.1\README.md` from the dataset
-- the two `.h5` files named above
-- `labs/Araya/flower_open_oven/20260803_211207_image.mp4`, first frame only
-
-Not included here, on purpose: the videos, the episode files, and the full index. Those stay on the local copy. A third small file, `labs/Araya/dit_close_oven/20260803_202945.h5`, did not download.
-
-## What week 2 is
-
-Watch about 30 attempts, pick two tasks that differ, and check that a success and a failure of the same instruction share the scene until the mistake. The proposal's examples are placement and pouring. This release has cup tasks, including `Harvard_EML/stack-and-pack-cups` (200 episodes) and `Harvard_EML/pack-cup` (99). Path names contain the word "pour" 18 times and "bin" 2 times, so those exact examples may be rare and the two tasks should be chosen after watching.
-
-## Setup
+## Setup for download_data.py
 
 ```
 python -m venv .venv
-.venv\Scripts\Activate.ps1      # macOS/Linux: source .venv/bin/activate
+.venv\Scripts\Activate.ps1
 pip install -U huggingface_hub datasets
-hf auth login                   # paste YOUR OWN Hugging Face token
+hf auth login
 python download_data.py
 ```
 
-Data downloads into `data/` (gitignored).
+## What is next
+
+Watch about 15 oven attempts and about 15 cup attempts, main camera only. Check that a success and a failure start on the same kind of scene and diverge where the attempt goes wrong. Spot-check cup failures, because those marks came from `imported_source_label` and the successes came from operator `HXS`. Then write the loader that returns 16 evenly spaced frames and the existing success mark for every episode.
+
+The full R3M cache, Robometer inference, and the four heads belong on TACC. We still need to learn how to use that machine and when to move this work off the laptop. Failure onset times are not in the files we opened. If we need timing, two people will later mark about 40 failed videos, with 10 marked by both.
+
+Week 6 is the report only. If we fall behind, we drop cross-task evaluation, then the hand-marked onset times, then Head C. Head A against Head B is the smallest comparison that can still reject the claim.
