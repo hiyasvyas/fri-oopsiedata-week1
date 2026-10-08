@@ -1,0 +1,8 @@
+R3M week 1 check
+Model: frozen R3M resnet50, not trained
+Input: first frame of labs/Araya/flower_open_oven/20260803_211207_image.mp4
+Frame size: 224 x 224 x 3
+Embedding shape: 1 x 2048
+Embedding vector length (L2 norm): 7.74
+Saved tensor: week1/r3m_one_frame.pt
+The video and the episode file were not modified, and nothing was uploaded to Hugging Face.

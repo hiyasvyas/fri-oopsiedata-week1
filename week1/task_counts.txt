@@ -1,0 +1,79 @@
+episodes 10677
+task_groups 273
+
+ 1080 Berkeley_RAIL (mixed or flat)
+  373 Enatic_OpenArm (mixed or flat)
+  336 Princeton_PRISM (mixed or flat)
+  333 UW_REAL (mixed or flat)
+  318 Princeton_IRoM/irom_fruit_playdata
+  254 Harvard_EML/clean-table
+  240 CMU_Intent (mixed or flat)
+  200 Araya/dit_close_oven
+  200 Araya/dit_open_drawer
+  200 Araya/dit_open_oven
+  200 Araya/dit_spoon_drawer
+  200 Araya/flower_close_oven
+  200 Araya/flower_open_drawer
+  200 Araya/flower_open_oven
+  200 Araya/flower_spoon_drawer
+  200 Araya/lap_close_oven
+  200 Araya/lap_open_drawer
+  200 Araya/lap_open_oven
+  200 Araya/lap_spoon_drawer
+  200 Araya/mibot_close_oven
+  200 Araya/mibot_open_drawer
+  200 Araya/mibot_open_oven
+  200 Araya/mibot_spoon_drawer
+  200 Araya/pi05_close_oven
+  200 Araya/pi05_open_drawer
+  200 Araya/pi05_open_oven
+  200 Araya/pi05_spoon_drawer
+  200 Araya/xvla_close_oven
+  200 Araya/xvla_open_drawer
+  200 Araya/xvla_open_oven
+  200 Araya/xvla_spoon_drawer
+  200 Harvard_EML/pick-cube
+  200 Harvard_EML/stack-and-pack-cups
+  152 Princeton_IRoM/irom_block_playdata
+  132 Berkeley_RAIL/20260614_125000
+  120 Stanford_Iris (mixed or flat)
+  114 Berkeley_RAIL/20260614_160032
+  110 Princeton_PRPL/Princeton_PRPL_prpl_eval_2026-08-18
+  100 UofT_TISL (mixed or flat)
+   99 Harvard_EML/pack-cup
+   87 Princeton_PRPL/Princeton_PRPL_prpl_tamp_2026-08-17
+   72 UW_REAL/20260616_163227
+   63 UdeM_REAL/converted
+   60 Armnet (mixed or flat)
+   60 UofT_TISL/cups_converted
+   60 UofT_TISL/pen_converted
+   55 UofT_TISL/20260618_123042
+   54 Princeton_PRPL/Princeton_PRPL_prpl_tamp_2026-08-13
+   54 Princeton_VLL (mixed or flat)
+   53 Stanford_REAL (mixed or flat)
+   52 UofT_TISL/stack_the_green_cup_into_the_purple_cup
+   50 Princeton_PRPL (mixed or flat)
+   50 UPenn_PAL (mixed or flat)
+   50 UofT_TISL/pick_basketball_and_place_in_blue_bowl
+   50 UofT_TISL/pick_green_block_and_place_on_cardboard
+   48 Berkeley_RAIL/20260615_192548
+   40 Princeton_PRPL/Princeton_PRPL_prpl_teleop_2026-08-16
+   39 Berkeley_RAIL/20260615_170750
+   37 Princeton_PRPL/Princeton_PRPL_prpl_eval_2026-08-19
+   36 Harvard_EML/stack-and-pack-cups-mobile-base
+   34 Princeton_PRPL/Princeton_PRPL_prpl_tamp_2026-08-12
+   33 Princeton_PRPL/Princeton_PRPL_prpl_tamp_2026-08-15
+   30 UdeM_REAL/teleop
+   29 UW_REAL/20260621_234059
+   25 UdeM_REAL/pi05droid
+   21 Berkeley_RAIL/20260614_150633
+   21 Berkeley_RAIL/20260615_161300
+   20 Princeton_PRPL/Princeton_PRPL_prpl_teleop_2026-08-18
+
+keywords
+pour 18
+bin 2
+cup 522
+success 2
+fail 479
+place 115

@@ -1,0 +1,19 @@
+Week 1 label check
+Data copy: C:\Users\sunee\oopsiedata-v0.1
+This folder was only read, plus three episode files were downloaded into it. Nothing was uploaded to Hugging Face.
+
+Index: episodes.csv has 10,677 episodes. Its columns do not include success or failure. Task counts are in task_counts.txt. Groups with at least 20 episodes are listed there. Examples large enough for later: Harvard_EML/stack-and-pack-cups (200), Harvard_EML/pack-cup (99), Araya/dit_close_oven (200), Araya/flower_open_oven (200).
+
+Episode files opened, not modified:
+- labs/Araya/flower_open_oven/20260803_211207.h5
+- labs/Berkeley_RAIL/20260614_125000/20260614_125502.h5
+A third small file, labs/Araya/dit_close_oven/20260803_202945.h5, did not download.
+
+Where the mark lives:
+episode_annotations/<operator name>/success
+Araya example: success = 1.0, schema oopsie_failure_taxonomy_v2, taxonomy outcome = success, failure_category empty. The operator group is named LN.
+Berkeley example: success = 1.0, schema oopsie_failure_taxonomy_v1, taxonomy empty. The operator group is named jagdeep.
+
+Both sampled episodes are successes. The success field is present in both labs, under a group named for the operator, so the path is not identical in every file. No frame index for the failure onset appeared in either file. Frame onset labels are still a later hand-marking step.
+
+Videos are separate mp4 files named in observations/video_paths. They were not inside the h5.

@@ -1,0 +1,92 @@
+\documentclass{article}
+
+\usepackage[final]{fri_rl_2026}
+
+\title{Spotting the Moment a Robot Fails\\ on OopsieData}
+
+\author{%
+  Annie Li, Phoebe Wang, and Hiya Vyas\\
+  The University of Texas at Austin
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A robot operating autonomously has no mechanism to recognize that the cup has slipped and the gripper is moving empty. This project builds a lightweight failure detector that, from the camera feed alone, localizes the frame at which an OopsieData episode has failed, early enough to stop or retry. We freeze R3M and compare four prediction heads under a single alarm calibrated on successful episodes. Our claim is that a progress head trained only on successes will continue predicting a rising score after the failure onset, and that ranking a successful trajectory above a failed one by the mean of its per-frame scores forces the score to drop where the embeddings diverge. A binary episode-level label should improve accuracy without advancing the alarm. Distance from a nominal success embedding tests whether the ranking signal was necessary. We accept the claim only if the preference head triggers at least two frames earlier than progress-only, before the final three frames, and the binary-label head does not outperform it on latency.
+\end{abstract}
+
+\section{Introduction}
+Instructed to place a cup in a bin, a robot can lose its grasp and continue moving an empty gripper toward the target. A robot operating without supervision requires its own failure signal, available early enough to stop, retry, or request assistance. This project constructs that capability on recorded video prior to any live deployment.
+
+The dataset is OopsieData~\citep{oopsiedata}. Successful and failed trajectories for the same instruction were recorded in the same evaluation sessions, sharing scene, lighting, and robot embodiment. Our literature review asks which lightweight vision method can localize the failure onset on data of this kind. The approach we evaluate is a frozen visual encoder, a small prediction head scoring each frame, and an alarm calibrated on successful episodes. The central question is which training signal produces the score drop that localizes the failure.
+
+\section{Background}
+A frozen visual encoder maps each frame to a fixed-dimensional embedding and is not updated during training. Ours is R3M, pretrained on Ego4D human video~\citep{r3m}. A progress score runs from 0 at task start to 1 at completion. A preference signal compares two trajectories and indicates which advanced the task further~\citep{robometer}. Precision is the fraction of triggered alarms corresponding to true failures; recall is the fraction of true failures detected; F1 is their harmonic mean. Detection latency is frames between the failure onset and the triggered alarm. Each design choice is documented in the literature review, submitted separately.
+
+\section{Project Proposal}
+
+\subsection{Problem}
+The target capability is a robot that, using only its camera feed, detects that a manipulation episode has failed early enough to halt, retry, or request intervention. Currently, the arm can drop an object and continue execution because no component localizes the failure frame during unsupervised operation. The detector must be lightweight enough to run concurrently with arm motion, and must produce a frame-level signal rather than only an episode-level label.
+
+\subsection{Gap}
+The capability is absent because methods that localize the failure frame are too expensive to run during execution, while lightweight methods do not produce a frame-level signal on recorded OopsieData.
+
+VIP and R3M produce per-frame reward estimates from human video without exposure to robot failures. On a real UR5 arm with injected failures, successful and failed episodes produce nearly identical reward curves, with scores continuing to rise after the failure onset~\citep{vip,r3m,progressor}. PROGRESSOR separates those curves only during online RL training, making it inapplicable to offline evaluation on recorded pairs~\citep{progressor}. Robometer localizes failures by detecting drops in a progress score trained jointly with a pairwise ranking objective~\citep{robometer}, but both supervision signals are entangled within one large model and a from-scratch copy collapsed from VOC $0.98$ and Kendall's $\tau$ of $0.92$ to $0.48$ and $-0.14$. Foresight also localizes failures but runs a large network at every timestep~\citep{foresight}, precluding concurrent deployment.
+
+Lightweight alternatives fail to provide a frame-level signal. Warehouse classifiers detect only 57\% of failures at a 5\% false-alarm rate with episode-level labels only~\citep{armbench,taskknowledge}. ARMOR can correctly classify an episode while providing no frame-level localization~\citep{armor}. PatchCore flags anomalous still images but produces no failure timestamp~\citep{patchcore}. ActProbe and VLA-FAIL monitor action-chunk consistency, miss failures whose motion appears normal, and require action plans OopsieData does not record~\citep{actprobe,vlafail}. What is missing is a lightweight head on a frozen encoder whose score drops at the failure onset, with the responsible supervision signal isolated from the large model in which it is currently entangled.
+
+\subsection{Insight}
+Our claim is that the score drop originates from the preference ranking signal rather than from the progress regression target alone. A head trained only on successful episode targets has never observed a failed trajectory; PROGRESSOR documents that in this case the predicted score continues tracing the success curve after the failure onset~\citep{progressor}.
+
+The preference signal introduces a failed trajectory as a contrastive example, with ranking applied to the mean of the 16 per-frame scores. The regression targets fix early frames to a monotonically increasing trajectory. Because the head operates on a single frame's embedding, a failure frame with an indistinguishable embedding receives the same rising score. In OopsieData, trajectories share the scene until the failure onset~\citep{oopsiedata}, so per-frame scores rise in parallel through the early frames, establishing a shared peak. The preference constraint requires the failed episode's mean to fall at least $0.2$ below the successful episode's mean. A failure curve continuing to rise at a lower level would require lower scores on the early shared frames, which the shared embeddings do not permit. The deficit must therefore appear after the embeddings diverge, as a drop from the established peak, which is what the detection rule identifies. Robometer already combines per-frame progress regression with pairwise ranking and reads failure from this drop~\citep{robometer}; we isolate that ranking signal on a lightweight head.
+
+Four heads share one frozen R3M encoder, one per-frame score, and one alarm, so differences in alarm timing are attributable to the training objective. Head A (progress only) is the control, expected to continue rising. Head B adds the preference signal, expected to drop at the failure onset. Head C adds ARMOR's binary episode-level label, predicted to improve F1 without advancing the alarm relative to Head B~\citep{armor}. Head D stores successful embeddings and scores each frame by proximity to the nearest stored example, adapting PatchCore's nearest-neighbor detection to produce a per-frame score~\citep{patchcore}. If Head D matches Head B on latency, appearance distance alone suffices and the ranking signal was not necessary. The claim is falsified if Head A alarms as early as Head B.
+
+\subsection{Approach}
+All experiments use recorded video from two OopsieData tasks chosen to differ meaningfully, such as object placement and pouring. Each episode is represented as 16 evenly spaced frames, preventing episode length from serving as a shortcut. We split by recording session to prevent near-duplicate frames from leaking across splits. R3M embeddings are cached once; Heads A, B, and C share the same two-layer MLP architecture. Neither R3M nor Robometer is fine-tuned. If either task exceeds 1{,}000 episodes, a session-balanced subset is kept to hold compute within budget.
+
+Head A uses progress supervision only: regression target $t/15$ on successful episodes, no target on failures. Head B adds the preference signal via automatic success-failure pairs, penalizing cases where the successful episode's mean fails to exceed the failed episode's mean by a margin of $0.2$. Head C additionally applies binary cross-entropy to the episode mean, with failed episodes upweighted by the success-to-failure ratio~\citep{armor}. Head D requires no training: it stores successful embeddings and normalizes proximity scores to $[0,1]$ using only those successes, so a typical success frame scores near 1 and an out-of-distribution frame near 0. All heads and Robometer's published progress curve are normalized to the same $[0,1]$ range, enabling a single shared detection rule.
+
+The alarm is shared across all heads~\citep{robometer,foresight}. On held-out successful episodes we search over drop thresholds of $0.05$, $0.10$, $0.20$, stall durations of $2$, $3$, $4$ frames, and a flag for final scores below $0.5$. The configuration closest to a $10\%$ false-alarm rate is frozen before any test failures are observed. Three additional baselines are included: a majority-class classifier, logistic regression on the mean of the 16 embeddings, and a clip-level classifier — the latter two producing episode labels without frame-level localization.
+
+\subsection{Evidence}
+The claim is supported only if the preference signal is what advances the alarm. At the fixed $10\%$ false-alarm rate on held-out sessions, we accept the claim only when: (1) Head B's median latency is at least two frames earlier than Head A's and falls before the final three of the 16 frames, and (2) Head C does not outperform Head B by two or more frames on latency. If condition (1) fails, the claim is rejected regardless of F1. Heads A, B, and C are each trained three times; differences smaller than the variance across runs are treated as ties.
+
+Head D tests whether the ranking signal was necessary: if Head D's latency falls within Head B's three-run variance, appearance distance alone matched the preference signal. We additionally rerun all heads with individually calibrated false-alarm rates; a head that achieves the lowest latency only under its own threshold does not satisfy the acceptance criterion. Robometer is evaluated under the same shared alarm with no additional training; if Head B's latency exceeds Robometer's by more than the three-run spread, we report this gap but it does not replace the Head A versus Head B criterion.
+
+If OopsieData provides failure onset timestamps we use them; otherwise two team members annotate approximately 40 failed episodes, both labeling the same 10. If they disagree by more than two frames on more than three of those 10, hand-labeled times are discarded and the frame-level claim remains unresolved. Episode F1, VOC, and Kendall's $\tau$ are reported to situate results alongside Robometer's published numbers. Cross-task evaluation assesses whether the learned drop generalizes beyond the training sessions.
+
+\section{Work Plan}
+In week 1 Claas Voelcker shares approximately 15{,}000 OopsieData episodes and we establish working runs of R3M and Robometer, verifying episode-level labels and adding them if absent. In week 2 we review approximately 30 episodes, select two task categories, and implement the data loader, verifying that early frames of matched success-failure pairs are visually similar and diverge at the failure onset. In week 3 we cache R3M embeddings, run the three episode-level baselines, Robometer, and Head D, and train Head A on one task; if Head A already fires before the final three frames, the preference claim is in doubt prior to training Heads B and C. In week 4 we train Head A on the full split and freeze the detection threshold. In week 5 we train Heads B and C and evaluate both acceptance criteria. Week 6 is reserved for the report and presentation with no new training. If behind schedule we drop in order: cross-task evaluation, hand-labeled onset times, and Head C. Head A evaluated against Head B is the minimal experiment capable of rejecting the claim.
+
+\section{Resource Overview}
+No robot hardware is required. We use two task categories from the approximately 15{,}000 episodes Claas Voelcker can share prior to the fully annotated release, retaining every episode up to a session-balanced cap of 1{,}000 per task. Compute runs as a SLURM job on TACC; we will confirm queue availability with our peer mentor before the deadline. We train only the lightweight heads and run Robometer under its published protocol, as a full vision-language training run does not fit within TACC constraints. Estimated total is 10--16 GPU-hours on one card: 1--2 hours for R3M embeddings, 3--6 for Robometer inference, under 2 for Heads A--C across three seeds, and 3--5 for debugging and threshold search. Head D adds no training time. Cached embeddings require under 1\,GB. Software: PyTorch, the public R3M repository, scikit-learn, and the public Robometer codebase.
+
+\section{AI statement}
+We used AI to revise this proposal against the rubric, the presentation, and the literature review.
+
+\begingroup
+\scriptsize
+\raggedright
+\setlength{\parskip}{0pt}
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\bibsep}{0pt}
+\begin{thebibliography}{12}
+\bibitem{oopsiedata} Oopsie Data. OopsieData. \url{https://oopsie-data.com/}, 2026.
+\bibitem{r3m} Nair et~al. R3M. arXiv:2203.12601, 2022.
+\bibitem{robometer} Liang et~al. Robometer. arXiv:2603.02115, 2026.
+\bibitem{vip} Ma et~al. VIP. arXiv:2210.00030, 2022.
+\bibitem{progressor} Ayalew et~al. PROGRESSOR. arXiv:2411.17764, 2024.
+\bibitem{foresight} Zhang et~al. Foresight. arXiv:2606.23085, 2026.
+\bibitem{armbench} Mitash et~al. ARMBench. arXiv:2303.16382, 2023.
+\bibitem{taskknowledge} Thoduka et~al. Task knowledge. arXiv:2508.18705, 2025.
+\bibitem{patchcore} Roth et~al. PatchCore. CVPR, 2022.
+\bibitem{actprobe} Huang et~al. ActProbe. arXiv:2606.08508, 2026.
+\bibitem{vlafail} Seligmann et~al. VLA-FAIL. arXiv:2606.21386, 2026.
+\bibitem{armor} Qi et~al. ARMOR. arXiv:2602.12405, 2026.
+\end{thebibliography}
+\endgroup
+
+\end{document}

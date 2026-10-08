@@ -1,0 +1,12 @@
+Week 1 Robometer check
+Repo cloned to C:\Users\sunee\oopsiedata-work\robometer from https://github.com/robometer/robometer
+Inference script present: scripts/example_inference_local.py
+Published weights: huggingface.co/robometer/Robometer-4B
+
+Inference did not run. This machine has no NVIDIA GPU (nvidia-smi is not installed). Robometer-4B is a 4 billion parameter model and the project plan runs it on TACC, not on this laptop. The weights were not downloaded. Nothing was trained.
+
+R3M did run on this machine, on CPU.
+Video, unread back to Hugging Face: labs/Araya/flower_open_oven/20260803_211207_image.mp4
+First frame shape: 224 x 224 x 3
+Frozen resnet50 embedding shape: 1 x 2048
+Saved at C:\Users\sunee\oopsiedata-work\r3m_one_frame.pt

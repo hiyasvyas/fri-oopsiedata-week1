@@ -1,0 +1,9 @@
+.env
+.env.*
+*.mp4
+*.h5
+*.hdf5
+episodes.csv
+episodes.parquet
+manifest.csv
+.cache/
